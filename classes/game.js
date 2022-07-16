@@ -77,15 +77,62 @@ const spriteConfig = {
 // Language: javascript
 //state : {flying, standing}
 //stage : {idle, run, jump, shoot, die}
+let eventState = {
+    state: "standing",
+    stage: "idle"
+}
 
 class EventHandler {
-    constructor(game) {
-        window.addEventListener('keyup', function (e) {
-            this.key = e.key;
-        })
+    constructor(e, prased) {
+        this.prased = prased;
+        this.e = e;
+        this.stage = "idle";
+        this.state = 'standing';
+        if (this.e) {
+            this.PlayerState();
+        }
+    }
+    PlayerState() {
+        if (this.e.key == "f") {
+            if (this.state == "flying") {
+                this.state = "standing";
+            } else {
+                this.state = "flying";
+            }
+        } else {
+            switch (this.e.key) {
+                case "ArrowRight":
+                    if (this.prased) {
+                        this.stage = this.state == "flying" ? "" : "run";
+                    } else {
+                        this.stage = this.state == "flying" ? "" : "walk";
+                    }
+
+                    this.direction = "right";
+                    break
+                case "ArrowLeft":
+                    if (this.prased) {
+                        this.stage = this.state == "flying" ? "" : "run";
+                    } else {
+                        this.stage = this.state == "flying" ? "" : "walk";
+                    }
+                    this.direction = "left";
+                    break
+                case "ArrowUp":
+                    this.stage = this.state == "flying" ? "" : "jump";
+                    break
+            }
+        }
     }
 
 }
+
+window.addEventListener('keyup', function (e) {
+    eventState = new EventHandler(e);
+})
+window.addEventListener('keydown', function (e) {
+    eventState = new EventHandler(e, true);
+})
 
 class Sprite {
     constructor(ctx, { ...args }) {
@@ -150,6 +197,7 @@ class Player {
     constructor(ctx, spriteObjects) {
         this.ctx = ctx;
         this.spriteObjects = spriteObjects;
+        this.EventHandler = new EventHandler();
 
         this.sprite = new Sprite(ctx,
             {
@@ -166,9 +214,28 @@ class Player {
                 freamSpeed: 8
             }
         );
+
+
     }
 
     draw(gameFream) {
+        //console.log(this.EventHandler);
+        let spriteKey = "weapon_" + eventState.state + "_" + eventState.stage;
+        let spriteSettings = spriteConfig.sprites.player[spriteKey]
+
+        this.sprite.spriteSheet = this.spriteObjects[spriteKey];
+        this.sprite.freamYn = spriteSettings.row;
+        this.sprite.freamSpeed = spriteSettings.speed;
+        this.sprite.freamXn = spriteSettings.col;
+
+        if (!spriteSettings.offsetX) {
+            this.sprite.offsetX = 0;
+        }
+
+
+        console.log(spriteSettings);
+
+
         this.sprite.update(gameFream);
         this.sprite.draw();
     }
