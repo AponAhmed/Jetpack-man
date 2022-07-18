@@ -1,166 +1,30 @@
-const spriteConfig = {
-    "sprite_width": 881,
-    "sprite_height": 639,
-    "path": "./assets/sprites/",
-    "type": "png",
-    "sprites": {
-        "player": {
-            "weapon_flying": {
-                "col": 5,
-                "row": 3,
-                "repeat": true,
-                "speed": 4
-            },
-            "weapon_flying_die": {
-                "col": 5,
-                "row": 1,
-                "repeat": false,
-                "speed": 4
-            },
-            "weapon_flying_idle": {
-                "col": 5,
-                "row": 2,
-                "repeat": true,
-                "speed": 8
-            },
-            "weapon_flying_shoot": {
-                "col": 5,
-                "row": 2,
-                "repeat": true,
-                "speed": 3
-            },
-            "weapon_standing_die": {
-                "col": 5,
-                "row": 1,
-                "repeat": false,
-                "speed": 10,
-                "offsetX": false
-            },
-            "weapon_standing_idle": {
-                "col": 5,
-                "row": 3,
-                "repeat": true,
-                "speed": 5
-            },
-            "weapon_standing_jump": {
-                "col": 5,
-                "row": 2,
-                "repeat": false,
-                "speed": 5
-            },
-            "weapon_standing_run": {
-                "col": 5,
-                "row": 3,
-                "repeat": true,
-                "speed": 2
-            },
-            "weapon_standing_shoot": {
-                "col": 5,
-                "row": 1,
-                "repeat": true,
-                "speed": 4
-            },
-            "weapon_standing_walk": {
-                "col": 5,
-                "row": 3,
-                "repeat": true,
-                "speed": 4
-            }
-        },
-        "enemy": {
 
-        }
 
-    }
-}
-
-// Language: javascript
-//state : {flying, standing}
-//stage : {idle, run, jump, shoot, die}
-let eventState = {
-    state: "standing",
-    stage: "idle"
-}
 
 class InputHandler {
     constructor(game) {
         this.game = game;
-        this.keysUseable = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Shift'];
+        this.keysUseable = ['f', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Shift'];
         window.addEventListener("keydown", (e) => {
             if (this.keysUseable.indexOf(e.key) > -1 && this.game.keys.indexOf(e.key) === -1) {
                 this.game.keys.push(e.key);
             }
-            console.log(this.game.keys);
         });
 
         window.addEventListener("keyup", (e) => {
             if (this.keysUseable.indexOf(e.key) > -1 && this.game.keys.indexOf(e.key) > -1) {
                 this.game.keys.splice(this.game.keys.indexOf(e.key), 1);
             }
-            console.log(this.game.keys);
         });
 
-
-    }
-}
-
-class EventHandler {
-    constructor(e, prased) {
-        this.prased = prased;
-        this.e = e;
-        this.stage = "idle";
-        this.state = 'standing';
-        if (this.e) {
-            this.PlayerState();
-        }
-        this.direction = "right";
-
-    }
-    PlayerState() {
-        if (this.e.key == "f") {
-            if (this.state == "flying") {
-                this.state = "standing";
-            } else {
-                this.state = "flying";
-            }
-        } else {
-            switch (this.e.key) {
-                case "ArrowRight":
-                    if (this.prased) {
-                        this.stage = this.state == "flying" ? "" : "run";
-                    } else {
-                        this.stage = this.state == "flying" ? "" : "walk";
-                    }
-
-                    this.direction = "right";
-                    break
-                case "ArrowLeft":
-                    if (this.prased) {
-                        this.stage = this.state == "flying" ? "" : "run";
-                    } else {
-                        this.stage = this.state == "flying" ? "" : "walk";
-                    }
-                    this.direction = "left";
-                    break
-                case "ArrowUp":
-                    this.stage = this.state == "flying" ? "" : "jump";
-                    break
-            }
-        }
     }
 
 }
 
-window.addEventListener('keyup', function (e) {
-    eventState = new EventHandler(e);
-})
-window.addEventListener('keydown', function (e) {
-    eventState = new EventHandler(e, true);
-})
+
 
 class Sprite {
-    constructor(ctx, { ...args }) {
-        this.ctx = ctx;
+    constructor({ ...args }) {
         this.x = args.x;
         this.y = args.y;
         this.spriteSheet = args.spriteSheet;
@@ -178,9 +42,10 @@ class Sprite {
         this.freamY = args.freamY || 0;
     }
 
-    draw() {
+    draw(ctx) {
+
         //let image = this.spriteSheet;
-        this.ctx.drawImage(
+        ctx.drawImage(
             this.spriteSheet,
             (this.freamX * this.freamWidth) + this.offsetX, //soyrce X
             this.freamY * this.freamHeight, //source Y
@@ -218,52 +83,152 @@ class Sprite {
 
 
 class Player {
-    constructor(ctx, spriteObjects) {
-        this.ctx = ctx;
-        this.spriteObjects = spriteObjects;
-        this.EventHandler = new EventHandler();
-
-        this.sprite = new Sprite(ctx,
-            {
-                x: 300,
-                y: 500,
-                spriteSheet: this.spriteObjects["weapon_standing_walk"],
-                freamWidth: 881,
-                freamHeight: 639,
-                freamXn: 5,
-                freamYn: 3,
-                offsetX: 200,
-                outFreamX: (881 / 4),
-                outFreamY: (639 / 4),
-                freamSpeed: 8
+    constructor(game) {
+        this.game = game;
+        this.spritesData = {
+            sprite_width: 881,
+            sprite_height: 639,
+            path: "./assets/sprites/",
+            type: "png",
+            sprites: {
+                weapon_flying: {
+                    col: 5,
+                    row: 3,
+                    repeat: true,
+                    speed: 4
+                },
+                weapon_flying_die: {
+                    col: 5,
+                    row: 1,
+                    repeat: false,
+                    speed: 4
+                },
+                weapon_flying_idle: {
+                    col: 5,
+                    row: 2,
+                    repeate: true,
+                    speed: 8
+                },
+                weapon_flying_shoot: {
+                    col: 5,
+                    row: 2,
+                    repeate: true,
+                    speed: 3
+                },
+                weapon_standing_die: {
+                    col: 5,
+                    row: 1,
+                    repeate: false,
+                    speed: 10,
+                    offsetX: false
+                },
+                weapon_standing_idle: {
+                    col: 5,
+                    row: 3,
+                    repeate: true,
+                    speed: 5
+                },
+                weapon_standing_jump: {
+                    col: 5,
+                    row: 2,
+                    repeate: false,
+                    speed: 5
+                },
+                weapon_standing_run: {
+                    col: 5,
+                    row: 3,
+                    repeate: true,
+                    speed: 2
+                },
+                weapon_standing_shoot: {
+                    col: 5,
+                    row: 1,
+                    repeate: true,
+                    speed: 4
+                },
+                weapon_standing_walk: {
+                    col: 5,
+                    row: 3,
+                    repeate: true,
+                    speed: 4
+                }
             }
-        );
-
-
+        };
+        this.currentSpriteKey = "weapon_standing_idle";
+        this.currentSprite = this.spritesData.sprites[this.currentSpriteKey];
+        this.position = {
+            x: 0,
+            y: 0
+        };
+        this.scale = .30;
     }
 
-    draw(gameFream) {
-        //console.log(this.EventHandler);
-        let spriteKey = "weapon_" + eventState.state + "_" + eventState.stage;
-        let spriteSettings = spriteConfig.sprites.player[spriteKey]
+    preloadSprite() {
+        for (let sprite in this.spritesData.sprites) {
+            this.spritesData.sprites[sprite].img = new Image();
+            this.spritesData.sprites[sprite].img.src = this.spritesData.path + sprite + "." + this.spritesData.type;
+        }
+        this.sprite = new Sprite(
+            {
+                x: this.position.x,
+                y: this.position.y,
+                spriteSheet: this.currentSprite.img,
+                freamWidth: this.spritesData.sprite_width,
+                freamHeight: this.spritesData.sprite_height,
+                freamXn: this.currentSprite.col,
+                freamYn: this.currentSprite.row,
+                offsetX: this.currentSprite.offsetX,
+                offsetY: this.currentSprite.offsetY,
+                outFreamX: (this.spritesData.sprite_width * this.scale),
+                outFreamY: (this.spritesData.sprite_height * this.scale),
+                freamSpeed: this.currentSprite.speed
+            }
+        );
+    }
 
-        this.sprite.spriteSheet = this.spriteObjects[spriteKey];
-        this.sprite.freamYn = spriteSettings.row;
-        this.sprite.freamSpeed = spriteSettings.speed;
-        this.sprite.freamXn = spriteSettings.col;
+    draw(context) {
+        this.sprite.draw(context);
+    }
 
-        if (!spriteSettings.offsetX) {
-            this.sprite.offsetX = 0;
+    update(gameFream) {
+        if ((this.game.keys.indexOf('ArrowLeft') > -1 || this.game.keys.indexOf('ArrowRight') > -1) && this.game.keys.indexOf('Shift') > -1) {
+            this.currentSpriteKey = "weapon_standing_run";
+        } else if (this.game.keys.indexOf('ArrowLeft') > -1 || this.game.keys.indexOf('ArrowRight') > -1) {
+            this.currentSpriteKey = "weapon_standing_walk";
+        } else {
+            this.idle();
         }
 
+        if (this.game.keys.indexOf('ArrowDown') > -1) {
+            this.idle();
+        }
+
+        this.spriteUpdate();
+
         this.sprite.update(gameFream);
-        this.sprite.draw();
+    }
+
+    spriteUpdate() {
+        this.currentSprite = this.spritesData.sprites[this.currentSpriteKey];
+
+        this.sprite.spriteSheet = this.currentSprite.img;
+        this.sprite.freamSpeed = this.currentSprite.speed;
+        this.sprite.freamXn = this.currentSprite.col;
+        this.sprite.freamYn = this.currentSprite.row;
+    }
+
+    idle() {
+        this.currentSpriteKey = "weapon_standing_idle";
     }
 }
 
 class Enemy {
     constructor() {
-
+        this.position = {
+            x: 0,
+            y: 0
+        };
+        this.scale = .30;
     }
 }
 
@@ -272,35 +237,28 @@ class Enemy {
 
 class Game {
     constructor(canvas) {
-        this.spriteConfig = spriteConfig;
-        this.spriteObjects = [];
         this.ctx = canvas.getContext("2d");
         this.canvas = canvas;
         this.gameFream = 0;
         this.keys = [];
         this.input = new InputHandler(this);
+        this.player = new Player(this);
+
     }
 
-    preloadAssets() {
-        let sprites = this.spriteConfig.sprites;
-        for (let key in sprites) {
-            let spriteGroup = sprites[key];
-            for (let nme in spriteGroup) {
-                let sprite_sheet = new Image();
-                sprite_sheet.src = this.spriteConfig.path + nme + "." + this.spriteConfig.type;
-                this.spriteObjects[nme] = sprite_sheet;
-            }
-        }
-        return this.spriteObjects;
+    init() {
+        this.player.preloadSprite();
     }
 
-    play() {
-        this.player = new Player(this.ctx, this.spriteObjects);
+    draw() {
+        this.player.draw(this.ctx);
+
     }
 
-    anim() {
+    update() {
         this.gameFream += 1;
-        this.player.draw(this.gameFream);
+
+        this.player.update(this.gameFream);
     }
 
 }

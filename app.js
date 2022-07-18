@@ -4,19 +4,18 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let game = new Game(canvas);
-game.preloadAssets();
+game.init();//Preload All assets before starting the game
 
 window.onload = function () {
     loader.remove();
-    game.play();
     animation();
+    //console.log(game);
 }
 
 
 function animation() {
     game.ctx.clearRect(0, 0, game.canvas.width, game.canvas.height);
-    game.anim();
-    //fream++;
-    //handleCircle();
+    game.update();
+    game.draw();
     window.requestAnimationFrame(animation);
 }
