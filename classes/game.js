@@ -82,6 +82,28 @@ let eventState = {
     stage: "idle"
 }
 
+class InputHandler {
+    constructor(game) {
+        this.game = game;
+        this.keysUseable = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Shift'];
+        window.addEventListener("keydown", (e) => {
+            if (this.keysUseable.indexOf(e.key) > -1 && this.game.keys.indexOf(e.key) === -1) {
+                this.game.keys.push(e.key);
+            }
+            console.log(this.game.keys);
+        });
+
+        window.addEventListener("keyup", (e) => {
+            if (this.keysUseable.indexOf(e.key) > -1 && this.game.keys.indexOf(e.key) > -1) {
+                this.game.keys.splice(this.game.keys.indexOf(e.key), 1);
+            }
+            console.log(this.game.keys);
+        });
+
+
+    }
+}
+
 class EventHandler {
     constructor(e, prased) {
         this.prased = prased;
@@ -91,6 +113,8 @@ class EventHandler {
         if (this.e) {
             this.PlayerState();
         }
+        this.direction = "right";
+
     }
     PlayerState() {
         if (this.e.key == "f") {
@@ -232,10 +256,6 @@ class Player {
             this.sprite.offsetX = 0;
         }
 
-
-        console.log(spriteSettings);
-
-
         this.sprite.update(gameFream);
         this.sprite.draw();
     }
@@ -257,6 +277,8 @@ class Game {
         this.ctx = canvas.getContext("2d");
         this.canvas = canvas;
         this.gameFream = 0;
+        this.keys = [];
+        this.input = new InputHandler(this);
     }
 
     preloadAssets() {
@@ -278,7 +300,6 @@ class Game {
 
     anim() {
         this.gameFream += 1;
-
         this.player.draw(this.gameFream);
     }
 
