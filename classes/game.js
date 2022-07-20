@@ -89,6 +89,38 @@ class Sprite {
     }
 }
 
+class Bullet {
+    constructor(game, args) {
+        this.game = game;
+        this.x = args.x;
+        this.y = args.y;
+        this.speed = args.speed || 5;
+        this.expire = false;
+        this.width = 10;
+        this.direction = args.direction || 'right';
+        if (this.direction === 'right') {
+            this.x += 50;
+            this.y -= 15;
+        } else {
+            this.x -= 50;
+            this.y -= 15;
+        }
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = 'rgb(255, 165, 0)';//orrange in rgb 
+        ctx.fillRect(this.x, this.y, 10, 5);
+    }
+
+    update(gameFream) {
+        if (this.direction === 'right') {
+            this.x += this.speed;
+        } else {
+            this.x -= this.speed;
+        }
+    }
+}
+
 
 class Player {
     constructor(game, { position }) {
@@ -168,8 +200,9 @@ class Player {
         this.position = position;
         this.scale = .30;
         this.movementSpeed = 2;
-        this.velocity = 0;
-
+        this.velocity = 1;
+        this.direction = "right";
+        this.bullets = [];
 
     }
 
@@ -197,10 +230,22 @@ class Player {
     }
 
     draw(context) {
-        //context.save();
-        //context.rotate(20 * Math.PI / 180);
+        context.save();
+
+        if (this.direction === "left") {
+            context.translate(this.position.x, this.position.y);
+            // context.rotate(-180 * Math.PI / 180);
+            context.scale(-1, 1);
+            this.sprite.x = 0;
+            this.sprite.y = 0;
+        }
+
         this.sprite.draw(context);
-        //context.restore();
+        context.restore();
+
+        for (let bullet of this.bullets) {
+            bullet.draw(context);
+        }
     }
 
     update(gameFream) {
@@ -270,6 +315,9 @@ class Player {
         //Shoot 
         if (this.game.keyIn(' ')) {
             this.currentState = "shoot";
+            if (gameFream % 20 == 0) {
+                this.bullets.push(new Bullet(this.game, { x: this.position.x, y: this.position.y, direction: this.direction }));
+            }
         }
 
         if (this.currentstage == "flying" && this.position.y < (this.game.canvas.height / 2)) {
@@ -287,9 +335,15 @@ class Player {
             this.velocity = 0;
         }
 
-
         this.spriteUpdate();
         this.sprite.update(gameFream);
+        //Update Bullets
+        for (let bullet of this.bullets) {
+            bullet.update(gameFream);
+            if (bullet.x + bullet.width > this.game.canvas.width || bullet.x < 0) {
+                this.bullets.splice(this.bullets.indexOf(bullet), 1);
+            }
+        }
     }
 
     infly() {
@@ -354,11 +408,11 @@ class Game {
         this.player = new Player(
             this,
             {
-                position: { x: 100, y: canvas.height - this.groundPosition }
-                //position: { x: canvas.width / 2, y: canvas.height / 2 }
+                //position: { x: 100, y: canvas.height - this.groundPosition }
+                position: { x: 100, y: (canvas.height / 2) + 150 }
             }
         );
-        this.gravity = .2;
+        this.gravity = .5;
 
     }
 
