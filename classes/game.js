@@ -42,6 +42,7 @@ class Sprite {
         this.offsetY = args.offsetY || 0;
         this.freamX = args.freamX || 0;
         this.freamY = args.freamY || 0;
+
     }
 
     draw(ctx) {
@@ -52,8 +53,7 @@ class Sprite {
             (this.y - this.outFreamY / 2),
             this.outFreamX,
             this.outFreamY
-        );
-        */
+        );*/
         //let image = this.spriteSheet;
         ctx.drawImage(
             this.spriteSheet,
@@ -71,7 +71,6 @@ class Sprite {
     }
 
     update(gameFream) {
-
         if (gameFream % this.freamSpeed === 0) {
             //FreamX Switch
             this.freamX += 1;
@@ -122,13 +121,99 @@ class Bullet {
 }
 
 
+class Enemy {
+    constructor(game, position) {
+        this.game = game;
+        this.position = position;
+        this.scale = .6;
+        this.currentSprite = this.game.EnemySpriteData.sprites[Math.floor(Math.random() * this.game.EnemySpriteData.sprites.length)];
+
+        this.currentState = 'walk';
+        this.direction = "right";
+        this.speed = .5;
+
+
+        this.sprite = new Sprite(
+            {
+                x: this.position.x,//Image X
+                y: this.position.y, //Image Y
+                spriteSheet: this.currentSprite.img, //Image
+                freamWidth: this.currentSprite.sprite_width, //Source Image Width
+                freamHeight: this.currentSprite.sprite_height, //Source Image Height
+                freamXn: this.currentSprite.state[this.currentState].freamXn, //Number of Columns
+                freamYn: 1, //Number of Columns
+                offsetX: 0,
+                offsetY: 0,
+                outFreamX: (this.currentSprite.sprite_width * this.scale),
+                outFreamY: (this.currentSprite.sprite_height * this.scale),
+                freamSpeed: this.currentSprite.state[this.currentState].speed,
+            }
+        );
+        //console.log(this.game.EnemySpriteData.sprites);
+    }
+
+    draw(context) {
+        context.save();
+        if (this.direction === "left") {
+            context.translate(this.position.x, this.position.y);
+            // context.rotate(-180 * Math.PI / 180);
+            context.scale(-1, 1);
+            this.sprite.x = 0;
+            this.sprite.y = 0;
+        }
+        this.sprite.draw(context);
+        context.restore();
+    }
+
+    update(gameFream) {
+        this.spriteUpdate();
+
+        this.sprite.x = this.position.x;
+        this.sprite.y = this.position.y;
+
+        switch (this.currentState) {
+            case 'idle':
+                this.sprite.freamY = 0;
+                break
+            case 'walk':
+                this.sprite.freamY = 1;
+                break
+            case 'attack':
+                this.sprite.freamY = 2;
+                break
+            case 'die':
+                this.sprite.freamY = 3;
+                break
+        }
+        if (this.direction === 'right') {
+            this.position.x += this.speed;
+            if (this.position.x >= this.game.canvas.width) {
+                this.sprite.freamX = 0;
+                this.direction = 'left';
+            }
+        } else {
+            this.position.x -= this.speed;
+            if (this.position.x <= 0) {
+                this.sprite.freamX = 0;
+                this.direction = 'right';
+            }
+        }
+        //console.log(this.sprite);
+        this.sprite.update(gameFream);
+    }
+
+    spriteUpdate() {
+        this.sprite.freamXn = this.currentSprite.state[this.currentState].freamXn; //Number of Columns
+    }
+}
+
 class Player {
     constructor(game, { position }) {
         this.game = game;
         this.spritesData = {
             sprite_width: 881,
             sprite_height: 639,
-            path: "./assets/sprites/",
+            path: "./assets/sprites/player/",
             type: "png",
             sprites: {
                 weapon_flying_fly: {
@@ -200,9 +285,9 @@ class Player {
         this.position = position;
         this.scale = .30;
         this.movementSpeed = 2;
-        this.velocity = 1;
         this.direction = "right";
         this.bullets = [];
+        this.velocity = 0;
 
     }
 
@@ -213,13 +298,13 @@ class Player {
         }
         this.sprite = new Sprite(
             {
-                x: this.position.x,
-                y: this.position.y,
-                spriteSheet: this.currentSprite.img,
-                freamWidth: this.spritesData.sprite_width,
-                freamHeight: this.spritesData.sprite_height,
-                freamXn: this.currentSprite.col,
-                freamYn: this.currentSprite.row,
+                x: this.position.x,//Image X
+                y: this.position.y, //Image Y
+                spriteSheet: this.currentSprite.img, //Image
+                freamWidth: this.spritesData.sprite_width, //Source Image Width
+                freamHeight: this.spritesData.sprite_height, //Source Image Height
+                freamXn: this.currentSprite.col, //Number of Columns
+                freamYn: this.currentSprite.row, //Number of Columns
                 offsetX: this.currentSprite.offsetX,
                 offsetY: this.currentSprite.offsetY,
                 outFreamX: (this.spritesData.sprite_width * this.scale),
@@ -249,6 +334,14 @@ class Player {
     }
 
     update(gameFream) {
+        this.velocity += this.game.gravity;
+        if (this.currentStage !== "flying") {
+            this.position.y += this.velocity;
+        }
+
+        if (this.position.y > this.game.canvas.height - this.game.groundPosition) {
+            this.position.y = this.game.canvas.height - this.game.groundPosition;
+        }
 
         //Derection Of Player 
         if (this.game.keyIn('ArrowLeft')) {
@@ -260,11 +353,11 @@ class Player {
         //stage Switch
         if (this.game.keyIn('f')) {
             this.currentStage = "flying";
-            this.velocity = -10;
         }
         if (this.game.keyIn('d')) {
             this.currentStage = "standing";
-            this.velocity = 1;
+            this.velocity = 0;
+
         }
 
         //State Of Player
@@ -301,10 +394,14 @@ class Player {
                 this.currentState = "fly";
 
             } else {
+
                 this.currentState = "jump";
-                this.velocity = -8;
+                this.velocity = - 5;
+
             }
         }
+
+
 
         if (this.game.keyIn('ArrowDown')) {
             if (this.currentStage == "flying") {
@@ -320,20 +417,6 @@ class Player {
             }
         }
 
-        if (this.currentstage == "flying" && this.position.y < (this.game.canvas.height / 2)) {
-            if (this.position.y >= (this.game.canvas.height / 2)) {
-                this.velocity = 0;
-            }
-        }
-
-        if (this.velocity !== 0) {
-            let v = this.velocity += this.game.gravity;
-            this.position.y += v;
-        }
-
-        if (this.position.y >= (this.game.canvas.height - this.game.groundPosition)) {
-            this.velocity = 0;
-        }
 
         this.spriteUpdate();
         this.sprite.update(gameFream);
@@ -350,7 +433,6 @@ class Player {
         if (this.position.y < (this.game.canvas.height - this.game.groundPosition)) {
             return true
         }
-        this.velocity = 0;
         return false;
     }
 
@@ -383,17 +465,30 @@ class Player {
     }
 }
 
-class Enemy {
-    constructor() {
-        this.position = {
-            x: 0,
-            y: 0
-        };
-        this.scale = .30;
+
+
+
+class UI {
+    constructor(game) {
+        this.game = game;
+        this.fontFamily = 'Bangers';
+        this.fontSize = '18';
+        this.fontColor = 'black';
+        this.game.ctx.font = this.fontSize + 'px ' + this.fontFamily;
     }
+
+    draw(context) {
+        context.save();
+        context.fillStyle = this.fontColor;
+        context.fillText("Score: " + this.game.score, 10, 20);
+        context.restore();
+    }   //Draw UI
+
+    update(gameFream) {
+    }
+
+
 }
-
-
 
 
 class Game {
@@ -404,16 +499,53 @@ class Game {
         this.keys = [];
         this.input = new InputHandler(this);
         this.groundPosition = 100;
-
+        this.score = 0;
+        this.enemies = [];
         this.player = new Player(
             this,
             {
-                //position: { x: 100, y: canvas.height - this.groundPosition }
+                //position: { x: 100, y: 0 }
                 position: { x: 100, y: (canvas.height / 2) + 150 }
             }
         );
-        this.gravity = .5;
+        this.EnemySpriteData = {
+            path: "./assets/sprites/enemy/",
+            type: "png",
+            sprites: [
+                {
+                    sprite_width: 360,
+                    sprite_height: 245,
+                    path: 'enemy1',
+                    state: {
+                        idle: {
+                            freamXn: 12,
+                            row: 0,
+                            speed: 6
+                        },
+                        walk: {
+                            freamXn: 18,
+                            row: 1,
+                            speed: 4
+                        },
+                        attack: {
+                            freamXn: 12,
+                            row: 2,
+                            speed: 5
+                        },
+                        die: {
+                            freamXn: 15,
+                            row: 3,
+                            speed: 4
+                        },
+                    }
+                }
+            ]
+        }
 
+        this.ui = new UI(this);
+        this.gravity = .5;
+        this.preloadEnemySprite();
+        this.addNewEnemy();
     }
 
     keyIn(key = '') {
@@ -423,18 +555,70 @@ class Game {
         return false;
     }
 
+    preloadEnemySprite() {
+        for (let sprite in this.EnemySpriteData.sprites) {
+            this.EnemySpriteData.sprites[sprite].img = new Image();
+            this.EnemySpriteData.sprites[sprite].img.src = this.EnemySpriteData.path + this.EnemySpriteData.sprites[sprite].path + "." + this.EnemySpriteData.type;
+        }
+    }
+
     init() {
         this.player.preloadSprite();
     }
 
     draw() {
         this.player.draw(this.ctx);
+        this.ui.draw(this.ctx);
+        for (let enemy of this.enemies) {
+            enemy.draw(this.ctx);
+        }
 
     }
 
-    update() {
+    addNewEnemy() {
+        this.enemies.push(new Enemy(this, { x: this.canvas.width + 10, y: this.canvas.height - (this.groundPosition) }));
+    }
+
+    update(deltaTime) {
+        this.deltaTime = deltaTime;
         this.gameFream += 1;
         this.player.update(this.gameFream);
+        this.ui.update(this.gameFream);
+        for (let enemy of this.enemies) {
+
+            if (this.collisionDetection(
+                {
+                    x: this.player.position.x,
+                    y: this.player.position.y,
+                    w: this.player.sprite.outFreamX,
+                    h: this.player.sprite.outFreamY
+                },
+                {
+                    x: enemy.position.x,
+                    y: enemy.position.y,
+                    w: enemy.sprite.outFreamX,
+                    h: enemy.sprite.outFreamY
+                }
+            )) {
+                enemy.speed = 0;
+                enemy.currentState = "attack";
+            } else {
+                enemy.speed = 1;
+                enemy.currentState = "walk";
+            }
+            enemy.update(this.gameFream);
+
+        }
+    }
+    collisionDetection(rect1, rect2) {
+        if (rect1.x < rect2.x + rect2.w &&
+            rect1.x + rect1.w > rect2.x &&
+            rect1.y < rect2.y + rect2.h &&
+            rect1.h + rect1.y > rect2.y) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

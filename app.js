@@ -8,14 +8,17 @@ game.init();//Preload All assets before starting the game
 
 window.onload = function () {
     loader.remove();
-    animation();
+    gameLoop();
     //console.log(game);
 }
 
-
-function animation() {
+let lastTime = 0;
+function gameLoop(time) {
     game.ctx.clearRect(0, 0, game.canvas.width, game.canvas.height);
-    game.update();
+    let deltaTime = time - lastTime;
+    //console.log(deltaTime);
+    lastTime = time;
+    game.update(deltaTime);
     game.draw();
-    window.requestAnimationFrame(animation);
+    requestAnimationFrame(gameLoop);
 }
