@@ -16,7 +16,7 @@ let lastTime = 0;
 function gameLoop(time) {
     game.ctx.clearRect(0, 0, game.canvas.width, game.canvas.height);
     let deltaTime = time - lastTime;
-    //console.log(deltaTime);
+   // console.log(deltaTime);
     lastTime = time;
     game.update(deltaTime);
     game.draw();
