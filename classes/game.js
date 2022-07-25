@@ -138,7 +138,7 @@ class Enemy {
     this.scale = 0.6;
     this.currentSprite =
       this.game.EnemySpriteData.sprites[
-        Math.floor(Math.random() * this.game.EnemySpriteData.sprites.length)
+      Math.floor(Math.random() * this.game.EnemySpriteData.sprites.length)
       ];
 
     this.currentState = "walk";
@@ -512,7 +512,7 @@ class UI {
     context.restore();
   } //Draw UI
 
-  update(gameFream) {}
+  update(gameFream) { }
 }
 
 class Game {
