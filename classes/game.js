@@ -1,3 +1,7 @@
+function random(max, min) {
+  return Math.floor(Math.random() * max) + min;
+}
+
 class InputHandler {
   constructor(game) {
     this.game = game;
@@ -10,6 +14,11 @@ class InputHandler {
       "ArrowDown",
       " ",
       "Shift",
+      "+",
+      "-",
+      "8",
+      "2",
+      "s"
     ];
 
     window.addEventListener("keydown", (e) => {
@@ -53,20 +62,21 @@ class Sprite {
   }
 
   draw(ctx) {
-    /*ctx.fillStyle = 'red';
-        ctx.fillRect(
-            (this.x - this.outFreamX / 2),
-            (this.y - this.outFreamY / 2),
-            this.outFreamX,
-            this.outFreamY
-        );*/
+    ctx.fillStyle = 'red';
+    /*ctx.fillRect(
+      (this.x - this.outFreamX / 2),
+      (this.y - this.outFreamY / 2),
+      this.outFreamX,
+      this.outFreamY
+    );
+    */
     //let image = this.spriteSheet;
     ctx.drawImage(
       this.spriteSheet,
       this.freamX * this.freamWidth + this.offsetX, //soyrce X
-      this.freamY * this.freamHeight, //source Y
+      this.freamY * this.freamHeight + this.offsetY, //source Y
       this.freamWidth - this.offsetX, //source Width
-      this.freamHeight, //source Height
+      this.freamHeight - this.offsetY, //source Height
       this.x - this.outFreamX / 2, //Destination X
       this.y - this.outFreamY / 2, //Destination Y
       this.outFreamX, //Destination Width
@@ -98,22 +108,57 @@ class Sprite {
   }
 }
 
+
+class Particle {
+  constructor(game, { ...arg }) {
+    this.game = game;
+    this.x = arg.x;
+    this.y = arg.y;
+    this.speed = random(4, 1);
+    this.color = "red";
+    //"hsl(" + (Math.random() * 360 - 180) + ",100%,50%)";
+    this.moveX = Math.random() * 3 - 1.5;
+    this.moveY = Math.random() * 3 - 1.5;
+    this.size = random(5, 1);
+    if (this.size < 1) {
+      this.size = 1;
+    }
+    this.v = 0.0;
+  }
+  update(deltaTime) {
+    this.x += this.moveX;
+    this.y += this.moveY + this.v;
+    if (this.size > 0.1) {
+      this.v += 0.08;
+      this.size -= 0.01;
+    }
+  }
+
+  draw(ctx) {
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+
 class Bullet {
   constructor(game, args) {
     this.game = game;
     this.x = args.x;
     this.y = args.y;
-    this.speed = args.speed || 5;
+    this.speed = args.speed || 8;
     this.expire = false;
-    this.width = 10;
-    this.height = 5;
+    this.width = 8;
+    this.height = 3;
     this.direction = args.direction || "right";
     if (this.direction === "right") {
       this.x += 50;
-      this.y -= 15;
+      this.y -= 10;
     } else {
       this.x -= 50;
-      this.y -= 15;
+      this.y -= 10;
     }
   }
 
@@ -123,6 +168,7 @@ class Bullet {
   }
 
   update(gameFream) {
+    this.speed += .2;
     if (this.direction === "right") {
       this.x += this.speed;
     } else {
@@ -135,7 +181,7 @@ class Enemy {
   constructor(game, position) {
     this.game = game;
     this.position = position;
-    this.scale = 0.6;
+
     this.currentSprite =
       this.game.EnemySpriteData.sprites[
       Math.floor(Math.random() * this.game.EnemySpriteData.sprites.length)
@@ -143,8 +189,11 @@ class Enemy {
 
     this.currentState = "walk";
     this.direction = "right";
-    this.speed = 0; // Math.random() * 10 - .5;
-    this.life = 100;
+
+    this.scale = this.currentSprite.scale;
+
+    this.speed = 0;//this.currentSprite.speed | 0; // 
+    this.life = this.currentSprite.power | 100;
     this.diying = false;
     this.deletion = false;
     this.deletionTimeAfterDie = 1500;
@@ -159,8 +208,8 @@ class Enemy {
       freamYn: 1, //Number of Columns
       offsetX: 0,
       offsetY: 0,
-      outFreamX: this.currentSprite.sprite_width * this.scale,
-      outFreamY: this.currentSprite.sprite_height * this.scale,
+      outFreamX: (this.currentSprite.sprite_width * this.scale) / 2, //Additionally Scale down divided by 2
+      outFreamY: (this.currentSprite.sprite_height * this.scale) / 2,
       freamSpeed: this.currentSprite.state[this.currentState].speed,
     });
     //console.log(this.game.EnemySpriteData.sprites);
@@ -237,6 +286,22 @@ class Enemy {
 
   spriteUpdate() {
     this.sprite.freamXn = this.currentSprite.state[this.currentState].freamXn; //Number of Columns
+  }
+
+  setDerection() {
+    this.game.player.position.x > this.position.x ? this.direction = "right" : this.direction = "left";
+  }
+
+  gethurt() {
+    //console.log(this.game);
+    for (let i = 0; i < 5; i++) {
+      this.game.particles.push(new Particle(this.game,
+        {
+          x: this.position.x,
+          y: this.position.y,
+        }
+      ));
+    }
   }
 }
 
@@ -321,6 +386,9 @@ class Player {
     this.direction = "right";
     this.bullets = [];
     this.velocity = 0;
+
+    this.actualWidth = (this.spritesData.sprite_width * this.scale) / 1.5;
+    this.actualHeight = (this.spritesData.sprite_height * this.scale) / 1.5;
   }
 
   preloadSprite() {
@@ -339,8 +407,8 @@ class Player {
       freamYn: this.currentSprite.row, //Number of Columns
       offsetX: this.currentSprite.offsetX,
       offsetY: this.currentSprite.offsetY,
-      outFreamX: this.spritesData.sprite_width * this.scale,
-      outFreamY: this.spritesData.sprite_height * this.scale,
+      outFreamX: this.actualWidth,
+      outFreamY: this.actualHeight,
       freamSpeed: this.currentSprite.speed,
     });
   }
@@ -365,6 +433,29 @@ class Player {
   }
 
   update(gameFream) {
+
+    if (this.game.keyIn('+')) {
+      this.sprite.outFreamX += 1;
+
+    }
+    if (this.game.keyIn('-')) {
+      this.sprite.outFreamX--;
+    }
+
+    if (this.game.keyIn('8')) {
+      this.sprite.offsetX += 1;
+    }
+    if (this.game.keyIn('2')) {
+      this.sprite.offsetX -= 1;
+    }
+
+
+    if (this.game.keyIn('s')) {
+      console.log(this.sprite);
+    }
+    //console.log(this.sprite);
+
+
     this.velocity += this.game.gravity;
     if (this.currentStage !== "flying") {
       this.position.y += this.velocity;
@@ -525,6 +616,7 @@ class Game {
     this.groundPosition = 100;
     this.score = 0;
     this.enemies = [];
+    this.particles = [];
     this.player = new Player(this, {
       //position: { x: 100, y: 0 }
       position: { x: 100, y: canvas.height / 2 + 150 },
@@ -537,6 +629,71 @@ class Game {
           sprite_width: 360,
           sprite_height: 245,
           path: "enemy1",
+          speed: 0.2,
+          damage_per_hit: 10,
+          scale: 0.5,
+          state: {
+            idle: {
+              freamXn: 12,
+              row: 0,
+              speed: 6,
+            },
+            walk: {
+              freamXn: 18,
+              row: 1,
+              speed: 4,
+            },
+            attack: {
+              freamXn: 12,
+              row: 2,
+              speed: 5,
+            },
+            die: {
+              freamXn: 15,
+              row: 3,
+              speed: 4,
+            },
+          },
+        },
+        {
+          sprite_width: 360,
+          sprite_height: 245,
+          path: "enemy2",
+          speed: 0.4,
+          power: 150,
+          scale: 0.7,
+          damage_per_hit: 15,
+          state: {
+            idle: {
+              freamXn: 12,
+              row: 0,
+              speed: 6,
+            },
+            walk: {
+              freamXn: 18,
+              row: 1,
+              speed: 4,
+            },
+            attack: {
+              freamXn: 12,
+              row: 2,
+              speed: 5,
+            },
+            die: {
+              freamXn: 15,
+              row: 3,
+              speed: 4,
+            },
+          },
+        },
+        {
+          sprite_width: 360,
+          sprite_height: 245,
+          path: "enemy3",
+          speed: 0.3,
+          power: 180,
+          scale: .9,
+          damage_per_hit: 25,
           state: {
             idle: {
               freamXn: 12,
@@ -599,6 +756,9 @@ class Game {
     for (let enemy of this.enemies) {
       enemy.draw(this.ctx);
     }
+    for (let particle of this.particles) {
+      particle.draw(this.ctx);
+    }
   }
 
   addNewEnemy() {
@@ -612,7 +772,7 @@ class Game {
   }
 
   update(deltaTime) {
-    //console.log(deltaTime);
+    //console.log(this.particles);
     this.deltaTime = deltaTime;
     this.gameFream += 1;
     //Enemy Add
@@ -627,13 +787,14 @@ class Game {
     } //Enemy Add
     this.player.update(this.gameFream);
     this.ui.update(this.gameFream);
+
     for (let enemy of this.enemies) {
       if (
         this.collisionDetection(
           {
-            x: this.player.position.x,
-            y: this.player.position.y,
-            w: this.player.sprite.outFreamX,
+            x: this.player.position.x - (this.player.actualWidth / 2 - 35),
+            y: this.player.position.y - this.player.actualHeight / 2,
+            w: 100,// this.player.sprite.outFreamX,
             h: this.player.sprite.outFreamY,
           },
           {
@@ -645,9 +806,10 @@ class Game {
         )
       ) {
         enemy.speed = 0;
+        enemy.setDerection();
         enemy.currentState = "attack";
       } else {
-        enemy.speed = 1;
+        enemy.speed = enemy.currentSprite.speed;
         enemy.currentState = "walk";
       }
 
@@ -656,6 +818,7 @@ class Game {
         //console.log(bullet, enemy.position);
         if (bullet.x > enemy.position.x && enemy.life > 0) {
           enemy.life -= 20;
+          enemy.gethurt();
           if (enemy.life <= 0) {
             this.score++;
           }
@@ -669,8 +832,25 @@ class Game {
         this.enemies.splice(this.enemies.indexOf(enemy), 1);
       }
     }
+
+    //Particles Update  
+    for (let particle of this.particles) {
+      particle.update(this.gameFream);
+      if (particle.x > this.canvas.width || particle.y > this.canvas.height || particle.x < 0 || particle.y < 0) {
+        this.particles.splice(this.particles.indexOf(particle), 1);
+      }
+    }
   }
   collisionDetection(rect1, rect2) {
+    this.ctx.fillStyle = 'red';
+    /*this.ctx.fillRect(
+      rect1.x,
+      rect1.y,
+      rect1.w,
+      rect1.h
+    );*/
+
+
     if (
       rect1.x < rect2.x + rect2.w &&
       rect1.x + rect1.w > rect2.x &&
