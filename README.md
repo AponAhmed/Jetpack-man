@@ -2,6 +2,8 @@
 
 Welcome to the 2D game project, where the player faces off against enemies in an action-packed adventure. This game is developed using HTML5 canvas and JavaScript.
 
+![Player Walking](assets/sprites/player/weapon_standing_walk.png)
+
 ## Table of Contents
 
 - [Game Overview](#game-overview)
